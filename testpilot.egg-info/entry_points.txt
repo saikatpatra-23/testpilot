@@ -1,0 +1,5 @@
+[console_scripts]
+testpilot = testpilot.cli:main
+
+[pytest11]
+testpilot = testpilot.pytest_plugin

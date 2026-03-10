@@ -1,0 +1,15 @@
+README.md
+setup.py
+testpilot/__init__.py
+testpilot/cli.py
+testpilot/git_diff.py
+testpilot/pytest_plugin.py
+testpilot/reporter.py
+testpilot/runner.py
+testpilot/test_mapper.py
+testpilot.egg-info/PKG-INFO
+testpilot.egg-info/SOURCES.txt
+testpilot.egg-info/dependency_links.txt
+testpilot.egg-info/entry_points.txt
+testpilot.egg-info/requires.txt
+testpilot.egg-info/top_level.txt
