@@ -3,6 +3,7 @@ import subprocess
 import sys
 import json
 import os
+import time
 import tempfile
 from pathlib import Path
 
@@ -21,7 +22,9 @@ def run_pytest(test_files: list[str], extra_args: list[str] = None) -> dict:
     ] + (extra_args or []) + test_files
 
     print(f"\n  Running: pytest {' '.join(test_files)}")
+    t0 = time.time()
     result = subprocess.run(cmd, capture_output=False)
+    duration = round(time.time() - t0, 2)
 
     passed, failed, errors = [], [], []
     if report_path.exists():
@@ -38,11 +41,70 @@ def run_pytest(test_files: list[str], extra_args: list[str] = None) -> dict:
             pass
 
     return {
-        "exit_code":  result.returncode,
-        "passed":     passed,
-        "failed":     failed,
-        "errors":     errors,
-        "test_files": test_files,
+        "exit_code":        result.returncode,
+        "passed":           passed,
+        "failed":           failed,
+        "errors":           errors,
+        "test_files":       test_files,
+        "duration_seconds": duration,
+    }
+
+
+def run_jest(test_files: list[str], cwd: str = ".") -> dict:
+    """
+    Run specific Jest test files via npx jest.
+    Returns structured result with passed/failed counts.
+    """
+    if not test_files:
+        return {"skipped": True, "reason": "No Jest test files mapped to changed code"}
+
+    # Jest accepts specific file paths as positional args (or patterns)
+    cmd = ["npx", "jest", "--no-coverage", "--forceExit"] + test_files
+
+    print(f"\n  Running: jest {' '.join(test_files)}")
+    t0 = time.time()
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, shell=(os.name == "nt"))
+    duration = round(time.time() - t0, 2)
+
+    stdout = result.stdout or ""
+    stderr = result.stderr or ""
+    output = stdout + stderr
+
+    # Parse Jest output for pass/fail counts
+    passed: list[str] = []
+    failed: list[str] = []
+    errors: list[str] = []
+
+    # Print output to console
+    print(output)
+
+    # Parse individual test results from verbose output (✓ / ✗ / ● lines)
+    for line in output.splitlines():
+        line_s = line.strip()
+        if line_s.startswith(("✓", "✔", "√", "PASS", "pass")):
+            passed.append(line_s)
+        elif line_s.startswith(("✕", "✗", "×", "FAIL", "fail", "●")):
+            failed.append(line_s)
+
+    # Fallback: use regex to find summary line like "X passed, Y failed"
+    import re
+    m = re.search(r"(\d+) passed", output)
+    if m and not passed:
+        passed = [f"(jest: {m.group(1)} tests passed)"]
+    m2 = re.search(r"(\d+) failed", output)
+    if m2:
+        count = int(m2.group(1))
+        if count > 0 and not failed:
+            failed = [f"(jest: {count} tests failed)"]
+
+    return {
+        "exit_code":        result.returncode,
+        "passed":           passed,
+        "failed":           failed,
+        "errors":           errors,
+        "test_files":       test_files,
+        "duration_seconds": duration,
+        "raw_output":       output[:2000],
     }
 
 

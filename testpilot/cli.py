@@ -11,11 +11,12 @@ Usage:
 import argparse
 import sys
 import os
+import time
 from pathlib import Path
 
 from .git_diff import get_changed_files
 from .test_mapper import resolve
-from .runner import run_pytest, run_all_tests, run_frontend
+from .runner import run_pytest, run_jest, run_all_tests, run_frontend
 from .reporter import generate, print_summary
 
 
@@ -34,32 +35,53 @@ def cmd_run(since: str, run_all: bool, app_url: str):
             sys.exit(0)
 
         mapping = resolve(changed, cwd)
-        print(f"\n  Changed  : {mapping['changed']}")
-        print(f"  Tests    : {mapping['test_files'] or '(none found)'}")
+        print(f"\n  Changed   : {mapping['changed']}")
+        print(f"  Tests (py): {mapping['test_files'] or '(none found)'}")
+        print(f"  Tests (js): {mapping['jest_files'] or '(none found)'}")
 
         if mapping["run_all"]:
             print("  Infrastructure change — running full suite")
             result = run_all_tests(cwd)
-        elif not mapping["test_files"] and not mapping["has_frontend"]:
+        elif not mapping["test_files"] and not mapping["jest_files"] and not mapping["has_frontend"]:
             print("\n  ⚠  No test files found for changed code.")
-            print("  Add tests to tests/ folder matching the source file name.")
+            print("  Add tests to tests/ or __tests__/ folder matching the source file name.")
             sys.exit(0)
         else:
-            # Backend tests
-            result = {"passed": [], "failed": [], "errors": [], "changed": changed,
-                      "test_files": mapping["test_files"], "since": since}
+            t0 = time.time()
+            result = {
+                "passed":       [],
+                "failed":       [],
+                "errors":       [],
+                "changed":      changed,
+                "test_files":   mapping["test_files"] + mapping["jest_files"],
+                "file_mapping": mapping.get("file_mapping", {}),
+                "since":        since,
+            }
 
+            # Backend (pytest) tests
             if mapping["test_files"]:
                 backend = run_pytest(mapping["test_files"])
-                result["passed"]     = backend.get("passed", [])
-                result["failed"]     = backend.get("failed", [])
-                result["errors"]     = backend.get("errors", [])
+                result["passed"]    += backend.get("passed", [])
+                result["failed"]    += backend.get("failed", [])
+                result["errors"]    += backend.get("errors", [])
                 result["exit_code"]  = backend.get("exit_code", 0)
 
-            # Frontend tests
-            if mapping["has_frontend"] and mapping["routes"]:
+            # Frontend unit tests (Jest / RTL)
+            if mapping["jest_files"]:
+                jest = run_jest(mapping["jest_files"], cwd=cwd)
+                result["passed"]   += jest.get("passed", [])
+                result["failed"]   += jest.get("failed", [])
+                result["errors"]   += jest.get("errors", [])
+                result["exit_code"] = jest.get("exit_code", 0)
+                if jest.get("raw_output"):
+                    result["jest_output"] = jest["raw_output"]
+
+            # Playwright (frontend routes) — only if --app-url is explicitly provided
+            if app_url and mapping["has_frontend"] and mapping["routes"]:
                 fe = run_frontend(mapping["routes"], app_url)
                 result["frontend"] = fe
+
+            result["duration_seconds"] = round(time.time() - t0, 2)
 
     print_summary(result)
     json_p, md_p = generate(result, cwd)
@@ -133,8 +155,8 @@ def main():
     run_p.add_argument("since", nargs="?", default="HEAD",
                        help="Git ref (HEAD, HEAD~1, origin/main). Default: HEAD (uncommitted changes)")
     run_p.add_argument("--all", action="store_true", help="Run full test suite")
-    run_p.add_argument("--app-url", default="http://localhost:3000",
-                       help="Frontend URL for Playwright tests")
+    run_p.add_argument("--app-url", default=None,
+                       help="Frontend URL for Playwright tests (enables Playwright route testing)")
 
     sub.add_parser("init", help="Scaffold config + .vscode/tasks.json")
 

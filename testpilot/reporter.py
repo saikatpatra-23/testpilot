@@ -6,74 +6,118 @@ from pathlib import Path
 
 def generate(results: dict, output_dir: str = ".") -> tuple[str, str]:
     """
-    Write report.json and report.md to output_dir.
+    Write testpilot_report.json and testpilot_report.md to output_dir.
     Returns (json_path, md_path).
     """
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    passed_list  = results.get("passed", [])
+    failed_list  = results.get("failed", [])
+    errors_list  = results.get("errors", [])
+    changed      = results.get("changed", [])
+    test_files   = results.get("test_files", [])
+    duration     = results.get("duration_seconds")
+    since        = results.get("since", "HEAD")
+
+    total = len(passed_list) + len(failed_list)
+    overall_pass = len(failed_list) == 0 and len(errors_list) == 0
+
     # ── JSON ────────────────────────────────────────────────────────────────
     report = {
         "timestamp":   ts,
-        "since":       results.get("since", "HEAD"),
-        "changed":     results.get("changed", []),
-        "test_files":  results.get("test_files", []),
-        "passed":      results.get("passed", []),
-        "failed":      results.get("failed", []),
-        "errors":      results.get("errors", []),
+        "since":       since,
+        "verdict":     "PASS" if overall_pass else "FAIL",
+        "changed":     changed,
+        "test_files":  test_files,
+        "passed":      passed_list,
+        "failed":      failed_list,
+        "errors":      errors_list,
         "frontend":    results.get("frontend"),
         "exit_code":   results.get("exit_code", 0),
+        "duration_seconds": duration,
         "summary": {
-            "total":  len(results.get("passed", [])) + len(results.get("failed", [])),
-            "passed": len(results.get("passed", [])),
-            "failed": len(results.get("failed", [])),
+            "files_changed": len(changed),
+            "tests_found":   len(test_files),
+            "total":         total,
+            "passed":        len(passed_list),
+            "failed":        len(failed_list),
+            "errors":        len(errors_list),
         }
     }
     json_path = out / "testpilot_report.json"
     json_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     # ── Markdown ─────────────────────────────────────────────────────────────
-    passed = report["summary"]["passed"]
-    failed = report["summary"]["failed"]
-    status = "✅ PASSED" if failed == 0 else "❌ FAILED"
+    verdict_line = "# ✅  PASS" if overall_pass else "# ❌  FAIL"
+
+    duration_str = ""
+    if duration is not None:
+        duration_str = f" | {duration:.1f}s"
+
+    # build file→test mapping table
+    mapping = results.get("file_mapping", {})  # {source_file: [test_file, ...]}
 
     lines = [
-        f"# TestPilot Report — {status}",
-        f"**{ts}** | diff since `{report['since']}`",
+        verdict_line,
         "",
-        f"| | Count |",
-        f"|---|---|",
-        f"| ✅ Passed | {passed} |",
-        f"| ❌ Failed | {failed} |",
-        f"| Total | {report['summary']['total']} |",
+        f"**Generated:** {ts}  |  **Diff since:** `{since}`{duration_str}",
+        "",
+        "## Summary",
+        "",
+        f"| Metric | Value |",
+        f"|--------|-------|",
+        f"| Files changed | {len(changed)} |",
+        f"| Test files found | {len(test_files)} |",
+        f"| Tests passed | {len(passed_list)} |",
+        f"| Tests failed | {len(failed_list)} |",
+        f"| Errors | {len(errors_list)} |",
+        f"| Total tests | {total} |",
         "",
     ]
 
-    if report["changed"]:
-        lines += ["## Changed Files", ""]
-        for f in report["changed"]:
+    # Changed files + their mapped tests
+    if changed:
+        lines += ["## Changed Files & Mapped Tests", ""]
+        if mapping:
+            lines += ["| Changed File | Mapped Test(s) |", "|---|---|"]
+            for src in changed:
+                tests = mapping.get(src, [])
+                tests_str = ", ".join(f"`{t}`" for t in tests) if tests else "_none_"
+                lines.append(f"| `{src}` | {tests_str} |")
+        else:
+            for f in changed:
+                lines.append(f"- `{f}`")
+        lines.append("")
+
+    if test_files and not mapping:
+        lines += ["## Test Files Run", ""]
+        for f in test_files:
             lines.append(f"- `{f}`")
         lines.append("")
 
-    if report["test_files"]:
-        lines += ["## Tests Run", ""]
-        for f in report["test_files"]:
-            lines.append(f"- `{f}`")
-        lines.append("")
-
-    if report["failed"]:
-        lines += ["## ❌ Failures", ""]
-        for f in report["failed"]:
-            lines.append(f"```\n{f}\n```")
-        lines.append("")
-
-    if report["passed"]:
+    # Individual test results
+    if passed_list:
         lines += ["## ✅ Passed Tests", ""]
-        for p in report["passed"]:
+        for p in passed_list:
             lines.append(f"- `{p}`")
         lines.append("")
 
+    if failed_list:
+        lines += ["## ❌ Failed Tests", ""]
+        for f in failed_list:
+            first_line = f.splitlines()[0] if isinstance(f, str) else str(f)
+            lines.append(f"```\n{f}\n```")
+        lines.append("")
+
+    if errors_list:
+        lines += ["## ⚠️ Errors", ""]
+        for e in errors_list:
+            lines.append(f"```\n{e}\n```")
+        lines.append("")
+
+    # Frontend section
     fe = report.get("frontend")
     if fe and not fe.get("skipped"):
         lines += ["## Frontend (Playwright)", ""]
@@ -83,6 +127,12 @@ def generate(results: dict, output_dir: str = ".") -> tuple[str, str]:
         lines.append(f"Result: {'✅ Passed' if exit_code == 0 else '❌ Failed'}")
         lines.append("")
 
+    # Footer
+    lines += [
+        "---",
+        "_Generated by [TestPilot](https://github.com/saikatpatra-23/testpilot)_",
+    ]
+
     md_path = out / "testpilot_report.md"
     md_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -90,19 +140,30 @@ def generate(results: dict, output_dir: str = ".") -> tuple[str, str]:
 
 
 def print_summary(results: dict):
-    passed = len(results.get("passed", []))
-    failed = len(results.get("failed", []))
+    passed  = len(results.get("passed", []))
+    failed  = len(results.get("failed", []))
+    errors  = len(results.get("errors", []))
     changed = results.get("changed", [])
     test_files = results.get("test_files", [])
+    duration = results.get("duration_seconds")
 
-    status = "PASSED" if failed == 0 else "FAILED"
-    print(f"\n{'='*50}")
-    print(f"  TestPilot -- {status}")
-    print(f"  Changed : {len(changed)} file(s)")
-    print(f"  Ran     : {len(test_files)} test file(s)")
-    print(f"  Passed  : {passed}  |  Failed: {failed}")
+    verdict = "PASS" if failed == 0 and errors == 0 else "FAIL"
+    verdict_icon = "[PASS]" if verdict == "PASS" else "[FAIL]"
+
+    dur_str = f"  |  {duration:.1f}s" if duration is not None else ""
+
+    print(f"\n{'='*52}")
+    print(f"  {verdict_icon}  TestPilot -- {verdict}{dur_str}")
+    print(f"  {'-'*46}")
+    print(f"  Files changed : {len(changed)}")
+    print(f"  Test files    : {len(test_files)}")
+    print(f"  Passed        : {passed}")
+    print(f"  Failed        : {failed}")
+    if errors:
+        print(f"  Errors        : {errors}")
     if failed:
         print(f"\n  Failed tests:")
         for f in results["failed"]:
-            print(f"    FAIL: {f.splitlines()[0]}")
-    print(f"{'='*50}")
+            first = f.splitlines()[0] if isinstance(f, str) else str(f)
+            print(f"    x  {first}")
+    print(f"{'='*52}")
