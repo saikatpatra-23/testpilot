@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-03-11 13:33:20",
+  "since": "HEAD~1",
+  "verdict": "PASS",
+  "changed": [
+    "demo_logic.py",
+    "demo_math.py",
+    "testpilot/cli.py",
+    "testpilot/reporter.py",
+    "testpilot/runner.py",
+    "testpilot/test_mapper.py"
+  ],
+  "test_files": [
+    "D:\\Claude Project\\testpilot\\.testpilot_cache\\test_demo_logic.py",
+    "D:\\Claude Project\\testpilot\\.testpilot_cache\\test_demo_math.py",
+    "D:\\Claude Project\\testpilot\\.testpilot_cache\\test_cli.py",
+    "D:\\Claude Project\\testpilot\\.testpilot_cache\\test_reporter.py",
+    "D:\\Claude Project\\testpilot\\.testpilot_cache\\test_runner.py",
+    "D:\\Claude Project\\testpilot\\.testpilot_cache\\test_test_mapper.py"
+  ],
+  "passed": [],
+  "failed": [],
+  "errors": [],
+  "frontend": null,
+  "exit_code": 2,
+  "duration_seconds": 5.21,
+  "summary": {
+    "files_changed": 6,
+    "tests_found": 6,
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "errors": 0
+  }
+}

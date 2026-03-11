@@ -1,0 +1,141 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\Student\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+metadata: {'Python': '3.12.10', 'Platform': 'Windows-11-10.0.26200-SP0', 'Packages': {'pytest': '9.0.2', 'pluggy': '1.6.0'}, 'Plugins': {'testpilot': '0.1.0', 'anyio': '4.12.1', 'asyncio': '1.3.0', 'cov': '7.0.0', 'json-report': '1.5.0', 'metadata': '3.1.1', 'mock': '3.15.1'}}
+rootdir: D:\Claude Project\testpilot
+plugins: testpilot-0.1.0, anyio-4.12.1, asyncio-1.3.0, cov-7.0.0, json-report-1.5.0, metadata-3.1.1, mock-3.15.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 105 items / 3 errors
+
+=================================== ERRORS ====================================
+________________ ERROR collecting .testpilot_cache/test_cli.py ________________
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:188: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\ast.py:52: in parse
+    return compile(source, filename, mode, flags,
+E     File "D:\Claude Project\testpilot\.testpilot_cache\test_cli.py", line 284
+E       patch("test
+E             ^
+E   SyntaxError: unterminated string literal (detected at line 284)
+_____________ ERROR collecting .testpilot_cache/test_reporter.py ______________
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:188: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\ast.py:52: in parse
+    return compile(source, filename, mode, flags,
+E     File "D:\Claude Project\testpilot\.testpilot_cache\test_reporter.py", line 342
+E       def test_fail_on_errors(self,
+E                              ^
+E   SyntaxError: '(' was never closed
+______________ ERROR collecting .testpilot_cache/test_runner.py _______________
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\python.py:507: in importtestmodule
+    mod = import_path(
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\importlib\__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:188: in exec_module
+    source_stat, co = _rewrite_test(fn, self.config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\site-packages\_pytest\assertion\rewrite.py:357: in _rewrite_test
+    tree = ast.parse(source, filename=strfn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\Student\AppData\Local\Programs\Python\Python312\Lib\ast.py:52: in parse
+    return compile(source, filename, mode, flags,
+E     File "D:\Claude Project\testpilot\.testpilot_cache\test_runner.py", line 362
+E       mock_run_pytest.return_value = {"exit_code": 0, "passed": [], "failed": [],
+E                                      ^
+E   SyntaxError: '{' was never closed
+--------------------------------- JSON report ---------------------------------
+report saved to: C:\Users\Student\AppData\Local\Temp\testpilot_report.json
+=========================== short test summary info ===========================
+ERROR .testpilot_cache/test_cli.py
+ERROR .testpilot_cache/test_reporter.py
+ERROR .testpilot_cache/test_runner.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 3 errors during collection !!!!!!!!!!!!!!!!!!!
+============================== 3 errors in 1.43s ==============================
+
+TestPilot ΓÇö diff since HEAD~1
+
+  Changed   : ['demo_logic.py', 'demo_math.py', 'testpilot/cli.py', 'testpilot/reporter.py', 'testpilot/runner.py', 'testpilot/test_mapper.py']
+  Tests (py): (none found)
+  Tests (js): (none found)
+
+  [AI Generate] No tests found for 6 file(s) ΓÇö asking Claude to write them...
+  [generate] Generating tests for demo_logic.py (no public symbols)
+  [generate] Saved -> .testpilot_cache\test_demo_logic.py
+  [generate] Generating tests for demo_math.py (add, subtract, multiply)
+  [generate] Saved -> .testpilot_cache\test_demo_math.py
+  [generate] Generating tests for testpilot/cli.py (cmd_run, cmd_init, main)
+  [generate] Saved -> .testpilot_cache\test_cli.py
+  [generate] Generating tests for testpilot/reporter.py (generate, print_summary)
+  [generate] Saved -> .testpilot_cache\test_reporter.py
+  [generate] Generating tests for testpilot/runner.py (run_pytest, run_jest, run_all_tests, run_frontend)
+  [generate] Saved -> .testpilot_cache\test_runner.py
+  [generate] Generating tests for testpilot/test_mapper.py (find_all_test_files, map_py_to_tests, map_fe_to_tests, map_frontend_to_routes, resolve)
+  [generate] Saved -> .testpilot_cache\test_test_mapper.py
+
+  Running AI-generated tests from .testpilot_cache/ ...
+
+  Running: pytest D:\Claude Project\testpilot\.testpilot_cache\test_demo_logic.py D:\Claude Project\testpilot\.testpilot_cache\test_demo_math.py D:\Claude Project\testpilot\.testpilot_cache\test_cli.py D:\Claude Project\testpilot\.testpilot_cache\test_reporter.py D:\Claude Project\testpilot\.testpilot_cache\test_runner.py D:\Claude Project\testpilot\.testpilot_cache\test_test_mapper.py
+
+====================================================
+  [PASS]  TestPilot -- PASS  |  5.2s
+  ----------------------------------------------
+  Files changed : 6
+  Test files    : 6
+  Passed        : 0
+  Failed        : 0
+====================================================
+
+  Report : D:\Claude Project\testpilot\testpilot_report.md
+  JSON   : D:\Claude Project\testpilot\testpilot_report.json
+
+  Cleaned up .testpilot_cache/  (use --keep-tests to preserve)
+

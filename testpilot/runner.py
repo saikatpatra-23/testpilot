@@ -23,7 +23,10 @@ def run_pytest(test_files: list[str], extra_args: list[str] = None) -> dict:
 
     print(f"\n  Running: pytest {' '.join(test_files)}")
     t0 = time.time()
-    result = subprocess.run(cmd, capture_output=False)
+    result = subprocess.run(
+        cmd, capture_output=False,
+        env={**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"},
+    )
     duration = round(time.time() - t0, 2)
 
     passed, failed, errors = [], [], []
@@ -63,7 +66,10 @@ def run_jest(test_files: list[str], cwd: str = ".") -> dict:
 
     print(f"\n  Running: jest {' '.join(test_files)}")
     t0 = time.time()
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, shell=(os.name == "nt"))
+    result = subprocess.run(
+        cmd, cwd=cwd, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", shell=(os.name == "nt"),
+    )
     duration = round(time.time() - t0, 2)
 
     stdout = result.stdout or ""
@@ -127,7 +133,10 @@ def run_frontend(routes: list[str], app_url: str = "http://localhost:3000") -> d
     Path(script_path).write_text(script, encoding="utf-8")
 
     print(f"\n  Running Playwright on routes: {routes}")
-    result = subprocess.run(["node", "run.js", script_path], cwd=skill_dir)
+    result = subprocess.run(
+        ["node", "run.js", script_path], cwd=skill_dir,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
     return {"exit_code": result.returncode, "routes": routes}
 
 

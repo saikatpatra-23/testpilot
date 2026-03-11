@@ -12,15 +12,17 @@ import argparse
 import sys
 import os
 import time
+import shutil
 from pathlib import Path
 
 from .git_diff import get_changed_files
 from .test_mapper import resolve
 from .runner import run_pytest, run_jest, run_all_tests, run_frontend
 from .reporter import generate, print_summary
+from .generator import generate_missing_tests
 
 
-def cmd_run(since: str, run_all: bool, app_url: str):
+def cmd_run(since: str, run_all: bool, app_url: str, no_generate: bool = False, keep_tests: bool = False):
     cwd = os.getcwd()
 
     if run_all:
@@ -43,9 +45,40 @@ def cmd_run(since: str, run_all: bool, app_url: str):
             print("  Infrastructure change — running full suite")
             result = run_all_tests(cwd)
         elif not mapping["test_files"] and not mapping["jest_files"] and not mapping["has_frontend"]:
-            print("\n  ⚠  No test files found for changed code.")
-            print("  Add tests to tests/ or __tests__/ folder matching the source file name.")
-            sys.exit(0)
+            if no_generate or not mapping["changed_py"]:
+                print("\n  [!] No test files found for changed code.")
+                print("  Add tests to tests/ or __tests__/ folder matching the source file name.")
+                sys.exit(0)
+
+            # AI generation path: ask Claude to write tests for unmapped Python files
+            generated = generate_missing_tests(
+                changed_py=mapping["changed_py"],
+                mapped_test_files=mapping["test_files"],
+                since=since,
+            )
+            if not generated:
+                print("\n  [!] AI generation produced no test files. Exiting.")
+                sys.exit(0)
+
+            mapping["test_files"] = generated
+            print(f"\n  Running AI-generated tests from .testpilot_cache/ ...")
+            t0 = time.time()
+            result = {
+                "passed":       [],
+                "failed":       [],
+                "errors":       [],
+                "changed":      changed,
+                "test_files":   generated,
+                "file_mapping": mapping.get("file_mapping", {}),
+                "since":        since,
+                "ai_generated": generated,
+            }
+            backend = run_pytest(generated, extra_args=[f"--rootdir={cwd}"])
+            result["passed"]   += backend.get("passed", [])
+            result["failed"]   += backend.get("failed", [])
+            result["errors"]   += backend.get("errors", [])
+            result["exit_code"] = backend.get("exit_code", 0)
+            result["duration_seconds"] = round(time.time() - t0, 2)
         else:
             t0 = time.time()
             result = {
@@ -87,6 +120,14 @@ def cmd_run(since: str, run_all: bool, app_url: str):
     json_p, md_p = generate(result, cwd)
     print(f"\n  Report : {md_p}")
     print(f"  JSON   : {json_p}\n")
+
+    # Clean up AI-generated test cache unless --keep-tests is set
+    if result.get("ai_generated") and not keep_tests:
+        from .generator import CACHE_DIR
+        cache_path = Path(cwd) / CACHE_DIR
+        if cache_path.exists():
+            shutil.rmtree(cache_path)
+            print(f"  Cleaned up {CACHE_DIR}/  (use --keep-tests to preserve)\n")
 
     sys.exit(0 if not result.get("failed") else 1)
 
@@ -132,7 +173,7 @@ def cmd_init():
 
     # .gitignore additions
     gi = cwd / ".gitignore"
-    additions = ["testpilot_report.json", "testpilot_report.md"]
+    additions = ["testpilot_report.json", "testpilot_report.md", ".testpilot_cache/"]
     if gi.exists():
         content = gi.read_text(encoding="utf-8")
         new = [a for a in additions if a not in content]
@@ -148,6 +189,12 @@ def cmd_init():
 
 
 def main():
+    # Ensure UTF-8 output on Windows to prevent UnicodeEncodeErrors
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(prog="testpilot", description="TestPilot — targeted test runner")
     sub = parser.add_subparsers(dest="cmd")
 
@@ -157,13 +204,17 @@ def main():
     run_p.add_argument("--all", action="store_true", help="Run full test suite")
     run_p.add_argument("--app-url", default=None,
                        help="Frontend URL for Playwright tests (enables Playwright route testing)")
+    run_p.add_argument("--no-generate", action="store_true",
+                       help="Skip AI test generation when no tests are found")
+    run_p.add_argument("--keep-tests", action="store_true",
+                       help="Keep AI-generated tests in .testpilot_cache/ after the run")
 
     sub.add_parser("init", help="Scaffold config + .vscode/tasks.json")
 
     args = parser.parse_args()
 
     if args.cmd == "run":
-        cmd_run(since=args.since, run_all=args.all, app_url=args.app_url)
+        cmd_run(since=args.since, run_all=args.all, app_url=args.app_url, no_generate=args.no_generate, keep_tests=args.keep_tests)
     elif args.cmd == "init":
         cmd_init()
     else:
